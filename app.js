@@ -605,8 +605,15 @@ async function renderAttachments() {
       image.src = url;
       image.alt = item.name || "笔记图片";
       image.loading = "lazy";
+      image.draggable = false;
       imageButton.append(image);
-      imageButton.addEventListener("click", () => openImageViewer(url, item.name));
+      const openPreview = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openImageViewer(url, item.name);
+      };
+      imageButton.addEventListener("click", openPreview);
+      image.addEventListener("click", openPreview);
 
       const remove = document.createElement("button");
       remove.type = "button";
@@ -657,13 +664,20 @@ function openImageViewer(url, name) {
   elements.imageViewerImage.src = url;
   elements.imageViewerImage.alt = name || "笔记图片";
   elements.imageViewerCaption.textContent = name || "";
-  elements.imageViewer.hidden = false;
+  if (typeof elements.imageViewer.showModal === "function") {
+    if (!elements.imageViewer.open) elements.imageViewer.showModal();
+  } else {
+    elements.imageViewer.setAttribute("open", "");
+  }
   requestAnimationFrame(() => elements.imageViewer.querySelector(".image-viewer-close")?.focus());
 }
 
 function closeImageViewer() {
-  elements.imageViewer.hidden = true;
-  elements.imageViewerImage.removeAttribute("src");
+  if (elements.imageViewer.open && typeof elements.imageViewer.close === "function") {
+    elements.imageViewer.close();
+  } else {
+    elements.imageViewer.removeAttribute("open");
+  }
 }
 
 async function addImages(files) {
@@ -1150,7 +1164,7 @@ function setSearch(value) {
 
 function handleGlobalKeydown(event) {
   if (event.key === "Escape") {
-    if (!elements.imageViewer.hidden) {
+    if (elements.imageViewer.open) {
       event.preventDefault();
       closeImageViewer();
       return;
@@ -1179,7 +1193,7 @@ function handleGlobalKeydown(event) {
 }
 
 window.handleNativeBack = () => {
-  if (!elements.imageViewer.hidden) {
+  if (elements.imageViewer.open) {
     closeImageViewer();
     return true;
   }

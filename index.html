@@ -239,7 +239,7 @@
     </section>
   </div>
 
-  <div class="image-viewer" id="imageViewer" hidden>
+  <dialog class="image-viewer" id="imageViewer" aria-label="图片预览">
     <button class="image-viewer-backdrop" type="button" data-close-image aria-label="关闭图片预览"></button>
     <figure class="image-viewer-figure">
       <img id="imageViewerImage" src="./icon-192.png" alt="">
@@ -248,7 +248,7 @@
         <svg aria-hidden="true"><use href="#icon-x"></use></svg>
       </button>
     </figure>
-  </div>
+  </dialog>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>
     <span id="toastMessage"></span>

@@ -44,7 +44,7 @@ python -m http.server 4173
 
 ## Android APK
 
-`xiaoye-notepad.apk` 是可直接安装的调试签名 APK，当前版本 1.1.1，支持 Android 6.0 及以上。
+`xiaoye-notepad.apk` 是可直接安装的调试签名 APK，当前版本 1.1.2，支持 Android 6.0 及以上。
 
 APK 采用本地 WebView，不请求网络权限。录音时 Android 会请求麦克风权限。笔记和媒体附件保存在应用本地，卸载应用或清除应用数据会删除笔记，建议定期使用“备份全部笔记”导出文字内容。
 

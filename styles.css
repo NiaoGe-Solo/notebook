@@ -1606,9 +1606,29 @@ html[data-theme="recorder"] .record-dialog {
 }
 
 .image-viewer {
-  display: grid;
-  place-items: center;
+  display: none;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
   padding: var(--space-lg);
+  place-items: center;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+}
+
+.image-viewer[open] {
+  display: grid;
+}
+
+.image-viewer::backdrop {
+  background: color-mix(in oklab, var(--color-ink) 74%, transparent);
+}
+
+.image-viewer-backdrop {
+  background: transparent;
 }
 
 .image-viewer-figure {
