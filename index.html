@@ -59,6 +59,20 @@
     <symbol id="icon-check" viewBox="0 0 24 24">
       <path d="m5 12 4 4 10-10"></path>
     </symbol>
+    <symbol id="icon-image" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+      <circle cx="9" cy="9" r="2"></circle>
+      <path d="m4 17 5-5 4 4 2-2 5 5"></path>
+    </symbol>
+    <symbol id="icon-mic" viewBox="0 0 24 24">
+      <rect x="9" y="3" width="6" height="12" rx="3"></rect>
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"></path>
+    </symbol>
+    <symbol id="icon-paint" viewBox="0 0 24 24">
+      <path d="M12 3a9 9 0 1 0 0 18h1.5a1.5 1.5 0 0 0 0-3H12a2 2 0 0 1 0-4h4a5 5 0 0 0 0-10h-4Z"></path>
+      <circle cx="7.5" cy="10" r="1"></circle>
+      <circle cx="9" cy="6.5" r="1"></circle>
+    </symbol>
   </svg>
 
   <div class="app-shell" id="appShell">
@@ -67,19 +81,24 @@
         <div class="brand">
           <svg class="brand-icon" aria-hidden="true"><use href="#icon-logo"></use></svg>
           <div>
-            <h1 id="appTitle">小页</h1>
+            <h1 id="appTitle">页间</h1>
             <p>离线记事本</p>
           </div>
         </div>
-        <button class="icon-button" id="homeMenuButton" type="button" aria-label="更多选项" aria-haspopup="dialog">
-          <svg aria-hidden="true"><use href="#icon-more"></use></svg>
-        </button>
+        <div class="header-actions">
+          <button class="icon-button" id="themeButton" type="button" aria-label="切换界面风格" aria-haspopup="dialog">
+            <svg aria-hidden="true"><use href="#icon-paint"></use></svg>
+          </button>
+          <button class="icon-button" id="homeMenuButton" type="button" aria-label="更多选项" aria-haspopup="dialog">
+            <svg aria-hidden="true"><use href="#icon-more"></use></svg>
+          </button>
+        </div>
       </header>
 
       <main class="home-main" id="homeMain">
         <section class="today-block" aria-labelledby="todayHeading">
           <p class="today-label" id="todayLabel"></p>
-          <h2 id="todayHeading">今天想记点什么？</h2>
+          <h2 id="todayHeading"><span id="heroMain">把今天，写得慢一点。</span><span id="heroSub">图片、声音，都放进同一页。</span></h2>
         </section>
 
         <label class="search-field" for="searchInput">
@@ -145,6 +164,13 @@
       <main class="editor-main">
         <input class="note-title-input" id="noteTitle" type="text" maxlength="100" autocomplete="off" placeholder="标题" aria-label="笔记标题">
         <textarea class="note-content-input" id="noteContent" maxlength="100000" placeholder="从这里开始写…" aria-label="笔记正文" spellcheck="true"></textarea>
+        <section class="attachment-section" id="attachmentSection" hidden aria-labelledby="attachmentTitle">
+          <div class="attachment-heading">
+            <h2 id="attachmentTitle">附件</h2>
+            <span id="attachmentCount"></span>
+          </div>
+          <div class="attachment-list" id="attachmentList"></div>
+        </section>
       </main>
 
       <footer class="editor-footer">
@@ -152,18 +178,19 @@
           <svg aria-hidden="true"><use href="#icon-pin"></use></svg>
           <span>置顶</span>
         </button>
-        <fieldset class="color-picker">
-          <legend class="visually-hidden">笔记颜色</legend>
-          <button class="color-dot color-dot--paper" type="button" data-color="paper" aria-label="纸色" aria-pressed="true"></button>
-          <button class="color-dot color-dot--mint" type="button" data-color="mint" aria-label="薄荷色" aria-pressed="false"></button>
-          <button class="color-dot color-dot--oat" type="button" data-color="oat" aria-label="燕麦色" aria-pressed="false"></button>
-          <button class="color-dot color-dot--rose" type="button" data-color="rose" aria-label="浅粉色" aria-pressed="false"></button>
-          <button class="color-dot color-dot--blue" type="button" data-color="blue" aria-label="浅蓝色" aria-pressed="false"></button>
-        </fieldset>
+        <button class="tool-button" id="imageButton" type="button">
+          <svg aria-hidden="true"><use href="#icon-image"></use></svg>
+          <span>图片</span>
+        </button>
+        <button class="tool-button" id="recordButton" type="button">
+          <svg aria-hidden="true"><use href="#icon-mic"></use></svg>
+          <span>录音</span>
+        </button>
         <button class="tool-button" id="shareNoteButton" type="button">
           <svg aria-hidden="true"><use href="#icon-share"></use></svg>
           <span>分享</span>
         </button>
+        <input id="imageInput" type="file" accept="image/*" multiple hidden>
       </footer>
     </section>
   </div>
@@ -173,9 +200,54 @@
     <section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" tabindex="-1">
       <span class="sheet-handle" aria-hidden="true"></span>
       <h2 id="sheetTitle">更多选项</h2>
+      <section class="theme-picker" id="themePicker" hidden aria-labelledby="themePickerTitle">
+        <h3 id="themePickerTitle">界面风格</h3>
+        <div class="theme-options">
+          <button class="theme-option" type="button" data-theme-choice="editorial" aria-pressed="false">
+            <span class="theme-swatch theme-swatch--editorial"></span>
+            <span><strong>页间</strong><small>编辑阅读感</small></span>
+          </button>
+          <button class="theme-option" type="button" data-theme-choice="recorder" aria-pressed="false">
+            <span class="theme-swatch theme-swatch--recorder"></span>
+            <span><strong>声页</strong><small>录音工作台</small></span>
+          </button>
+          <button class="theme-option" type="button" data-theme-choice="native" aria-pressed="false">
+            <span class="theme-swatch theme-swatch--native"></span>
+            <span><strong>白页</strong><small>原生清爽感</small></span>
+          </button>
+        </div>
+      </section>
       <div class="sheet-actions" id="sheetActions"></div>
       <button class="sheet-cancel" type="button" data-close-sheet>取消</button>
     </section>
+  </div>
+
+  <div class="record-layer" id="recordLayer" hidden>
+    <button class="record-backdrop" type="button" data-close-record aria-label="关闭录音"></button>
+    <section class="record-dialog" role="dialog" aria-modal="true" aria-labelledby="recordTitle" tabindex="-1">
+      <div class="record-dialog-head">
+        <p>语音笔记</p>
+        <button class="icon-button" type="button" data-close-record aria-label="关闭录音">
+          <svg aria-hidden="true"><use href="#icon-x"></use></svg>
+        </button>
+      </div>
+      <p class="record-state" id="recordState">准备录音</p>
+      <p class="record-timer" id="recordTimer">00:00</p>
+      <div class="live-wave" id="liveWave" aria-hidden="true"></div>
+      <p class="record-hint" id="recordHint">录音会保存在当前笔记里，不会上传。</p>
+      <button class="record-toggle" id="recordToggleButton" type="button">开始录音</button>
+    </section>
+  </div>
+
+  <div class="image-viewer" id="imageViewer" hidden>
+    <button class="image-viewer-backdrop" type="button" data-close-image aria-label="关闭图片预览"></button>
+    <figure class="image-viewer-figure">
+      <img id="imageViewerImage" src="./icon-192.png" alt="">
+      <figcaption id="imageViewerCaption"></figcaption>
+      <button class="image-viewer-close" type="button" data-close-image aria-label="关闭图片预览">
+        <svg aria-hidden="true"><use href="#icon-x"></use></svg>
+      </button>
+    </figure>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite" hidden>
@@ -183,6 +255,7 @@
     <button id="toastAction" type="button" aria-label="撤销" hidden></button>
   </div>
 
+  <script src="./media.js" defer></script>
   <script src="./app.js" defer></script>
 </body>
 </html>

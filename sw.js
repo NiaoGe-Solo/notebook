@@ -1,4 +1,4 @@
-const CACHE_NAME = "xiaoye-v1";
+const CACHE_NAME = "xiaoye-v2";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -6,6 +6,7 @@ const APP_SHELL = [
   "./tokens.css",
   "./base.css",
   "./app.js",
+  "./media.js",
   "./manifest.webmanifest",
   "./icon.svg",
   "./icon-192.png",

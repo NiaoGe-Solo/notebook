@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>记事本 · 三个视觉方向</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --board: oklch(89% 0.012 85);
+      --board-ink: oklch(20% 0.012 70);
+      --paper: oklch(97.5% 0.012 85);
+      --paper-2: oklch(94.5% 0.018 80);
+      --ink: oklch(21% 0.018 65);
+      --muted: oklch(48% 0.02 70);
+      --line: oklch(84% 0.018 78);
+      --rust: oklch(51% 0.15 34);
+      --night: oklch(16% 0.012 260);
+      --night-2: oklch(21% 0.016 255);
+      --signal: oklch(67% 0.2 43);
+      --cool: oklch(97.8% 0.004 240);
+      --blue: oklch(56% 0.18 255);
+      --blue-soft: oklch(92% 0.03 250);
+      --font-sans: "Aptos", "Microsoft YaHei UI", "PingFang SC", sans-serif;
+      --font-serif: Georgia, "Noto Serif SC", "Songti SC", serif;
+      --font-mono: "Cascadia Mono", "Microsoft YaHei UI", monospace;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--board); color: var(--board-ink); font-family: var(--font-sans); }
+    body { padding: 32px; }
+    button, textarea { font: inherit; }
+    button { color: inherit; }
+
+    .board-head {
+      max-width: 1380px;
+      margin: 0 auto 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 24px;
+    }
+
+    .board-head h1 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 42px;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+
+    .board-head p {
+      max-width: 58ch;
+      margin: 8px 0 0;
+      color: color-mix(in oklab, var(--board-ink) 65%, var(--board));
+      line-height: 1.6;
+    }
+
+    .board-note {
+      flex: 0 0 auto;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: color-mix(in oklab, var(--board-ink) 55%, var(--board));
+    }
+
+    .direction-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 28px;
+      max-width: 1380px;
+      margin: 0 auto;
+    }
+
+    .direction {
+      min-width: 0;
+    }
+
+    .direction-head {
+      display: flex;
+      justify-content: flex-start;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    .direction-kicker {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+    }
+
+    .direction h2 {
+      margin: 0;
+      font-family: var(--font-serif);
+      font-size: 26px;
+      letter-spacing: -0.02em;
+    }
+
+    .direction-meta {
+      margin: 10px 0 0;
+      min-height: 3.2em;
+      color: color-mix(in oklab, var(--board-ink) 62%, var(--board));
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .phone {
+      --bg: var(--paper);
+      --surface: var(--paper-2);
+      --fg: var(--ink);
+      --sub: var(--muted);
+      --line: var(--line);
+      --accent: var(--rust);
+      --accent-ink: white;
+      --radius: 18px;
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      aspect-ratio: 390 / 760;
+      background: var(--bg);
+      color: var(--fg);
+      border-radius: 28px;
+      box-shadow: 0 18px 54px oklch(25% 0.02 70 / 0.18);
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 24px 24px 20px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 36px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border: 1.5px solid currentColor;
+      border-radius: 7px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
+
+    .top-action {
+      border: 0;
+      background: transparent;
+      color: var(--sub);
+      cursor: pointer;
+    }
+
+    .hero {
+      margin-top: 22px;
+    }
+
+    .eyebrow {
+      color: var(--sub);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.04em;
+    }
+
+    .hero h3 {
+      margin: 8px 0 0;
+      max-width: 10ch;
+      font-family: var(--font-serif);
+      font-size: 34px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+    }
+
+    .search {
+      min-height: 44px;
+      margin-top: 18px;
+      padding: 0 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      color: var(--sub);
+      background: color-mix(in oklab, var(--surface) 62%, transparent);
+      font-size: 13px;
+    }
+
+    .section-row {
+      margin-top: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .section-row h4 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .section-row span {
+      color: var(--sub);
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
+
+    .note-stack {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+
+    .note {
+      position: relative;
+      padding: 14px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      text-align: left;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .note h5 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .note p {
+      margin: 6px 0 0;
+      color: var(--sub);
+      font-size: 12px;
+      line-height: 1.5;
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .note-meta {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--sub);
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
+
+    .tag {
+      padding: 3px 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+    }
+
+    .photo-strip {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 6px;
+      height: 72px;
+    }
+
+    .photo-slot {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      color: var(--sub);
+      background:
+        radial-gradient(circle at 32% 28%, color-mix(in oklab, var(--accent) 28%, var(--surface)) 0 14%, transparent 15%),
+        linear-gradient(150deg, color-mix(in oklab, var(--fg) 12%, var(--surface)), var(--surface));
+      border: 1px dashed color-mix(in oklab, var(--line) 80%, var(--fg));
+      border-radius: calc(var(--radius) - 8px);
+      font-size: 10px;
+    }
+
+    .audio-note {
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .play {
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .wave {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .wave i {
+      width: 2px;
+      height: var(--h);
+      display: block;
+      background: currentColor;
+      border-radius: 2px;
+      opacity: 0.7;
+    }
+
+    .timecode {
+      color: var(--sub);
+      font-family: var(--font-mono);
+      font-size: 10px;
+    }
+
+    .bottom-bar {
+      flex: 0 0 auto;
+      display: flex;
+      gap: 10px;
+      padding-top: 14px;
+    }
+
+    .write-button,
+    .record-button,
+    .camera-button {
+      min-height: 48px;
+      border: 0;
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+
+    .write-button {
+      flex: 1;
+      padding: 0 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--accent);
+      color: var(--accent-ink);
+      font-weight: 700;
+    }
+
+    .record-button {
+      width: 48px;
+      display: grid;
+      place-items: center;
+      background: color-mix(in oklab, var(--surface) 80%, var(--fg));
+    }
+
+    .icon {
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.8;
+    }
+
+    .editor-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      background: var(--bg);
+      transform: translateX(100%);
+      transition: transform 220ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .phone.editing .editor-overlay {
+      transform: translateX(0);
+    }
+
+    .editor-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--sub);
+      font-size: 11px;
+    }
+
+    .editor-toolbar button {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .editor-title {
+      margin: 26px 0 0;
+      font-family: var(--font-serif);
+      font-size: 30px;
+      line-height: 1.15;
+    }
+
+    .editor-copy {
+      margin: 14px 0 0;
+      color: var(--sub);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .attachment-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 0.6fr;
+      gap: 8px;
+      margin-top: 24px;
+      height: 118px;
+    }
+
+    .attachment-grid .photo-slot {
+      border-style: solid;
+    }
+
+    .record-player {
+      margin-top: 16px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+
+    .record-player .wave {
+      flex: 1;
+    }
+
+    .editor-actions {
+      margin-top: auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .editor-actions button {
+      min-height: 50px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: transparent;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .editor-actions button:last-child {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-color: var(--accent);
+    }
+
+    .recording {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      padding: 28px 24px;
+      background: color-mix(in oklab, var(--bg) 88%, var(--fg));
+    }
+
+    .phone.recording-open .recording {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .recording-head {
+      display: flex;
+      justify-content: space-between;
+      color: var(--sub);
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .recording-head button {
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .recording-time {
+      margin: 70px 0 0;
+      font-family: var(--font-mono);
+      font-size: 58px;
+      letter-spacing: -0.05em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .recording .wave {
+      height: 96px;
+      margin-top: 36px;
+      justify-content: center;
+      color: var(--accent);
+    }
+
+    .recording .wave i {
+      width: 4px;
+      opacity: 1;
+    }
+
+    .recording-hint {
+      margin: 12px 0 0;
+      color: var(--sub);
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .record-dock {
+      margin-top: auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    .record-stop {
+      width: 74px;
+      height: 74px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .record-stop::before {
+      content: "";
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      background: currentColor;
+    }
+
+    .demo-label {
+      margin: 14px 0 0;
+      color: color-mix(in oklab, var(--board-ink) 62%, var(--board));
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .d-a .phone {
+      --bg: oklch(97.8% 0.014 82);
+      --surface: oklch(95.2% 0.02 78);
+      --fg: oklch(23% 0.018 58);
+      --sub: oklch(50% 0.025 62);
+      --line: oklch(86% 0.022 72);
+      --accent: oklch(52% 0.15 34);
+      --accent-ink: oklch(98% 0.008 75);
+      --radius: 8px;
+    }
+
+    .d-a .note {
+      background: transparent;
+      border-top: 1px solid var(--line);
+      border-radius: 0;
+      padding: 13px 0 10px;
+    }
+
+    .d-a .note:first-child {
+      border-top: 0;
+    }
+
+    .d-a .note h5 {
+      font-family: var(--font-serif);
+      font-size: 1.18rem;
+    }
+
+    .d-a .bottom-bar {
+      border-top: 1px solid var(--line);
+      background: var(--bg);
+    }
+
+    .d-a .write-button {
+      border: 1px solid var(--fg);
+      background: var(--fg);
+    }
+
+    .d-b .phone {
+      --bg: oklch(12% 0.008 265);
+      --surface: oklch(19% 0.012 265);
+      --fg: oklch(94% 0.008 80);
+      --sub: oklch(66% 0.012 250);
+      --line: oklch(31% 0.014 260);
+      --accent: oklch(68% 0.2 43);
+      --accent-ink: oklch(15% 0.008 260);
+      --radius: 3px;
+      font-family: var(--font-mono);
+    }
+
+    .d-b .brand,
+    .d-b .hero h3 {
+      font-family: var(--font-mono);
+      letter-spacing: -0.055em;
+    }
+
+    .d-b .hero h3 {
+      max-width: 8ch;
+      font-size: 40px;
+      line-height: 0.98;
+      color: var(--accent);
+    }
+
+    .d-b .search {
+      border-radius: 0;
+      background: var(--surface);
+    }
+
+    .d-b .note {
+      border-radius: 0;
+      border: 1px solid var(--line);
+    }
+
+    .d-b .note h5 {
+      font-family: var(--font-sans);
+    }
+
+    .d-b .note-meta,
+    .d-b .eyebrow,
+    .d-b .section-row span {
+      text-transform: uppercase;
+      letter-spacing: 0.045em;
+    }
+
+    .d-b .photo-slot {
+      border-radius: 0;
+      border-style: solid;
+      background: oklch(30% 0.02 250);
+    }
+
+    .d-b .bottom-bar {
+      border-top: 2px solid var(--line);
+    }
+
+    .d-b .record-button {
+      border-radius: 0;
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .d-c .phone {
+      --bg: oklch(97.5% 0.005 240);
+      --surface: oklch(99.5% 0.002 240);
+      --fg: oklch(18% 0.012 250);
+      --sub: oklch(54% 0.015 245);
+      --line: oklch(90% 0.008 240);
+      --accent: oklch(55% 0.18 255);
+      --accent-ink: white;
+      --radius: 18px;
+    }
+
+    .d-c .hero h3 {
+      max-width: 12ch;
+      font-family: var(--font-sans);
+      font-size: 29px;
+      letter-spacing: -0.045em;
+    }
+
+    .d-c .note {
+      box-shadow: 0 1px 0 var(--line), 0 10px 22px -18px oklch(25% 0.03 250 / 0.35);
+    }
+
+    .d-c .photo-slot {
+      background:
+        radial-gradient(circle at 70% 30%, oklch(85% 0.03 70) 0 22%, transparent 23%),
+        linear-gradient(150deg, oklch(78% 0.06 92), oklch(90% 0.02 250));
+    }
+
+    .d-c .bottom-bar {
+      justify-content: space-between;
+    }
+
+    .d-c .record-button,
+    .d-c .camera-button {
+      border-radius: 999px;
+      background: var(--blue-soft);
+      color: var(--blue);
+    }
+
+    .d-c .camera-button {
+      width: 48px;
+      display: grid;
+      place-items: center;
+    }
+
+    @media (max-width: 1050px) {
+      .direction-grid {
+        grid-template-columns: 1fr;
+        max-width: 540px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .editor-overlay { transition-duration: 0.01ms; }
+    }
+  </style>
+</head>
+<body>
+  <header class="board-head">
+    <div>
+      <h1>记事本：三个视觉方向</h1>
+      <p>三种方式都包含图片附件和语音笔记。点任意一条笔记可查看编辑页，再点“录音”查看录音状态。</p>
+    </div>
+    <span class="board-note">Huashu Design / direction gate</span>
+  </header>
+
+  <main class="direction-grid">
+    <section class="direction d-a">
+      <div class="direction-head"><span class="direction-kicker">方向 A</span><h2>页间</h2></div>
+      <p class="direction-meta">编辑阅读式。纸张、书页行距与克制的铁锈红。媒体像书里的插页和声音注解。</p>
+      <div class="phone" data-phone>
+        <div class="screen">
+          <div class="topbar">
+            <div class="brand"><span class="brand-mark">页</span>页间</div>
+            <button class="top-action">•••</button>
+          </div>
+          <div class="hero">
+            <div class="eyebrow">11 月 15 日 · 3 条笔记</div>
+            <h3>把今天，写得慢一点。</h3>
+          </div>
+          <div class="search">搜索页间</div>
+          <div class="section-row"><h4>最近</h4><span>3 NOTES</span></div>
+          <div class="note-stack">
+            <button class="note" data-open-editor>
+              <h5>楼下桂花开了</h5>
+              <div class="photo-strip"><span class="photo-slot">照片附件</span><span class="photo-slot">照片</span></div>
+              <div class="note-meta"><span>今天 16:40</span><span class="tag">2 张图片</span></div>
+            </button>
+            <button class="note" data-open-editor>
+              <h5>半夜想到的一段话</h5>
+              <div class="audio-note">
+                <span class="play">▶</span>
+                <span class="wave" aria-hidden="true">
+                  <i style="--h:8px"></i><i style="--h:18px"></i><i style="--h:26px"></i><i style="--h:14px"></i><i style="--h:22px"></i><i style="--h:10px"></i><i style="--h:26px"></i><i style="--h:18px"></i><i style="--h:12px"></i><i style="--h:23px"></i><i style="--h:16px"></i><i style="--h:9px"></i>
+                </span>
+                <span class="timecode">00:42</span>
+              </div>
+              <div class="note-meta"><span>昨天 23:18</span><span class="tag">语音笔记</span></div>
+            </button>
+            <button class="note" data-open-editor>
+              <h5>周末清单</h5>
+              <p>去河边走一圈。顺便买点咖啡豆。</p>
+              <div class="note-meta"><span>昨天 09:30</span></div>
+            </button>
+          </div>
+          <div class="bottom-bar">
+            <button class="write-button" data-open-editor><span>写新笔记</span><span>＋</span></button>
+            <button class="record-button" data-open-record aria-label="录音">◉</button>
+          </div>
+        </div>
+        <div class="editor-overlay">
+          <div class="editor-toolbar"><button data-back>‹ 返回</button><span>已保存</span><button>•••</button></div>
+          <h3 class="editor-title">楼下桂花开了</h3>
+          <p class="editor-copy">风从楼下吹上来，整间屋子都有一点甜味。绕过去看了一会儿，树比去年高。</p>
+          <div class="attachment-grid"><span class="photo-slot">照片附件</span><span class="photo-slot">照片</span></div>
+          <div class="record-player"><span class="play">▶</span><span class="wave"><i style="--h:8px"></i><i style="--h:20px"></i><i style="--h:28px"></i><i style="--h:13px"></i><i style="--h:22px"></i><i style="--h:9px"></i><i style="--h:19px"></i><i style="--h:12px"></i></span><span class="timecode">00:18</span></div>
+          <div class="editor-actions"><button>＋ 图片</button><button data-open-record>● 录音</button></div>
+        </div>
+        <div class="recording">
+          <div class="recording-head"><span>● REC</span><button data-close-record>取消</button></div>
+          <div class="recording-time">00:27</div>
+          <span class="wave" aria-hidden="true"><i style="--h:18px"></i><i style="--h:52px"></i><i style="--h:34px"></i><i style="--h:72px"></i><i style="--h:44px"></i><i style="--h:62px"></i><i style="--h:28px"></i><i style="--h:84px"></i><i style="--h:46px"></i><i style="--h:66px"></i><i style="--h:36px"></i><i style="--h:50px"></i></span>
+          <p class="recording-hint">再录 00:33，停下来会自动保存</p>
+          <div class="record-dock"><button class="record-stop" data-close-record aria-label="停止录音"></button></div>
+        </div>
+      </div>
+      <p class="demo-label">气质：安静但不寡淡；用版式承载内容，图片和声音成为阅读节奏的一部分。</p>
+    </section>
+
+    <section class="direction d-b">
+      <div class="direction-head"><span class="direction-kicker">方向 B</span><h2>声页</h2></div>
+      <p class="direction-meta">袖珍录音工作台。近黑面板、橙色信号与清晰刻度，适合边录边记。</p>
+      <div class="phone" data-phone>
+        <div class="screen">
+          <div class="topbar">
+            <div class="brand"><span class="brand-mark">S</span>声页 / 04</div>
+            <button class="top-action">BAT 82</button>
+          </div>
+          <div class="hero">
+            <div class="eyebrow">INPUT / NOTEBOOK</div>
+            <h3>先说。<br>再整理。</h3>
+          </div>
+          <div class="search">⌕ 搜索录音与文字</div>
+          <div class="section-row"><h4>最近输入</h4><span>03 SAVED</span></div>
+          <div class="note-stack">
+            <button class="note" data-open-editor>
+              <div class="audio-note">
+                <span class="play">▶</span>
+                <span class="wave"><i style="--h:7px"></i><i style="--h:18px"></i><i style="--h:24px"></i><i style="--h:10px"></i><i style="--h:20px"></i><i style="--h:28px"></i><i style="--h:14px"></i><i style="--h:22px"></i><i style="--h:8px"></i><i style="--h:25px"></i></span>
+                <span class="timecode">01:12</span>
+              </div>
+              <h5>半夜想到的一段话</h5>
+              <div class="note-meta"><span>VOICE MEMO</span><span class="tag">已保存</span></div>
+            </button>
+            <button class="note" data-open-editor>
+              <h5>楼下桂花开了</h5>
+              <div class="photo-strip"><span class="photo-slot">PHOTO 1</span><span class="photo-slot">PHOTO 2</span></div>
+              <div class="note-meta"><span>16:40</span><span class="tag">2 IMAGES</span></div>
+            </button>
+            <button class="note" data-open-editor>
+              <h5>周末清单</h5>
+              <p>河边 / 咖啡豆 / 给家里打电话</p>
+              <div class="note-meta"><span>TEXT</span></div>
+            </button>
+          </div>
+          <div class="bottom-bar">
+            <button class="write-button" data-open-editor><span>＋ 写笔记</span><span>ENTER</span></button>
+            <button class="record-button" data-open-record aria-label="录音">●</button>
+          </div>
+        </div>
+        <div class="editor-overlay">
+          <div class="editor-toolbar"><button data-back>‹ BACK</button><span>SAVED 16:42</span><button>•••</button></div>
+          <h3 class="editor-title">楼下桂花开了</h3>
+          <p class="editor-copy">风从楼下吹上来，整间屋子都有一点甜味。</p>
+          <div class="attachment-grid"><span class="photo-slot">PHOTO 1</span><span class="photo-slot">PHOTO 2</span></div>
+          <div class="record-player"><span class="play">▶</span><span class="wave"><i style="--h:7px"></i><i style="--h:18px"></i><i style="--h:25px"></i><i style="--h:11px"></i><i style="--h:22px"></i><i style="--h:28px"></i><i style="--h:14px"></i><i style="--h:20px"></i></span><span class="timecode">00:18</span></div>
+          <div class="editor-actions"><button>IMAGE +</button><button data-open-record>● REC</button></div>
+        </div>
+        <div class="recording">
+          <div class="recording-head"><span>● REC / INPUT 1</span><button data-close-record>CANCEL</button></div>
+          <div class="recording-time">00:27</div>
+          <span class="wave" aria-hidden="true"><i style="--h:20px"></i><i style="--h:48px"></i><i style="--h:32px"></i><i style="--h:68px"></i><i style="--h:42px"></i><i style="--h:58px"></i><i style="--h:24px"></i><i style="--h:80px"></i><i style="--h:44px"></i><i style="--h:62px"></i><i style="--h:34px"></i><i style="--h:46px"></i></span>
+          <p class="recording-hint">AUTO SAVE READY / SIGNAL OK</p>
+          <div class="record-dock"><button class="record-stop" data-close-record aria-label="停止录音"></button></div>
+        </div>
+      </div>
+      <p class="demo-label">气质：工具感强、反馈明确；录音不是附属功能，而是首页的第二种入口。</p>
+    </section>
+
+    <section class="direction d-c">
+      <div class="direction-head"><span class="direction-kicker">方向 C</span><h2>白页</h2></div>
+      <p class="direction-meta">原生清爽式。白色层阶、蓝色操作色和熟悉的移动端信息密度，学习成本最低。</p>
+      <div class="phone" data-phone>
+        <div class="screen">
+          <div class="topbar">
+            <div class="brand"><span class="brand-mark">＋</span>记事本</div>
+            <button class="top-action">•••</button>
+          </div>
+          <div class="hero">
+            <div class="eyebrow">星期日，11 月 15 日</div>
+            <h3>想到什么，就留下什么。</h3>
+          </div>
+          <div class="search">⌕ 搜索所有笔记</div>
+          <div class="section-row"><h4>最近笔记</h4><span>全部 / 声音 / 图片</span></div>
+          <div class="note-stack">
+            <button class="note" data-open-editor>
+              <h5>楼下桂花开了</h5>
+              <p>风从楼下吹上来，整间屋子都有一点甜味。</p>
+              <div class="photo-strip"><span class="photo-slot">照片附件</span><span class="photo-slot">照片</span></div>
+              <div class="note-meta"><span>今天 16:40</span><span class="tag">2 张图片</span></div>
+            </button>
+            <button class="note" data-open-editor>
+              <h5>半夜想到的一段话</h5>
+              <div class="audio-note"><span class="play">▶</span><span class="wave"><i style="--h:8px"></i><i style="--h:18px"></i><i style="--h:26px"></i><i style="--h:13px"></i><i style="--h:22px"></i><i style="--h:9px"></i><i style="--h:20px"></i><i style="--h:14px"></i></span><span class="timecode">00:42</span></div>
+              <div class="note-meta"><span>昨天 23:18</span><span class="tag">语音笔记</span></div>
+            </button>
+            <button class="note" data-open-editor>
+              <h5>周末清单</h5>
+              <p>去河边走一圈。顺便买点咖啡豆。</p>
+              <div class="note-meta"><span>昨天 09:30</span></div>
+            </button>
+          </div>
+          <div class="bottom-bar">
+            <button class="write-button" data-open-editor><span>写笔记</span><span>＋</span></button>
+            <button class="camera-button" aria-label="插入图片">▧</button>
+            <button class="record-button" data-open-record aria-label="录音">◉</button>
+          </div>
+        </div>
+        <div class="editor-overlay">
+          <div class="editor-toolbar"><button data-back>‹ 笔记</button><span>已保存</span><button>•••</button></div>
+          <h3 class="editor-title">楼下桂花开了</h3>
+          <p class="editor-copy">风从楼下吹上来，整间屋子都有一点甜味。绕过去看了一会儿，树比去年高。</p>
+          <div class="attachment-grid"><span class="photo-slot">照片附件</span><span class="photo-slot">照片</span></div>
+          <div class="record-player"><span class="play">▶</span><span class="wave"><i style="--h:8px"></i><i style="--h:19px"></i><i style="--h:26px"></i><i style="--h:11px"></i><i style="--h:21px"></i><i style="--h:9px"></i><i style="--h:17px"></i><i style="--h:13px"></i></span><span class="timecode">00:18</span></div>
+          <div class="editor-actions"><button>图片</button><button data-open-record>录音</button></div>
+        </div>
+        <div class="recording">
+          <div class="recording-head"><span>录音中</span><button data-close-record>取消</button></div>
+          <div class="recording-time">00:27</div>
+          <span class="wave" aria-hidden="true"><i style="--h:20px"></i><i style="--h:48px"></i><i style="--h:32px"></i><i style="--h:68px"></i><i style="--h:42px"></i><i style="--h:58px"></i><i style="--h:24px"></i><i style="--h:78px"></i><i style="--h:44px"></i><i style="--h:62px"></i><i style="--h:34px"></i><i style="--h:46px"></i></span>
+          <p class="recording-hint">停止后会自动保存到当前笔记</p>
+          <div class="record-dock"><button class="record-stop" data-close-record aria-label="停止录音"></button></div>
+        </div>
+      </div>
+      <p class="demo-label">气质：熟悉、轻快、可预测；优先保证第一次使用的人立刻会写、会拍、会录。</p>
+    </section>
+  </main>
+
+  <script>
+    document.addEventListener("click", (event) => {
+      const phone = event.target.closest("[data-phone]");
+      if (!phone) return;
+
+      if (event.target.closest("[data-open-editor]")) {
+        phone.classList.add("editing");
+      }
+      if (event.target.closest("[data-back]")) {
+        phone.classList.remove("editing", "recording-open");
+      }
+      if (event.target.closest("[data-open-record]")) {
+        phone.classList.add("editing", "recording-open");
+      }
+      if (event.target.closest("[data-close-record]")) {
+        phone.classList.remove("recording-open");
+      }
+    });
+  </script>
+</body>
+</html>

@@ -23,7 +23,7 @@ $env:PATH = "$(Join-Path $JavaHome "bin");$env:PATH"
 
 New-Item -ItemType Directory -Path $AssetsRoot,$BuildRoot -Force | Out-Null
 Get-ChildItem $AssetsRoot -Force -ErrorAction SilentlyContinue | Remove-Item -Recurse -Force
-Copy-Item (Join-Path $WebRoot "index.html"),(Join-Path $WebRoot "styles.css"),(Join-Path $WebRoot "tokens.css"),(Join-Path $WebRoot "base.css"),(Join-Path $WebRoot "app.js"),(Join-Path $WebRoot "manifest.webmanifest"),(Join-Path $WebRoot "icon.svg"),(Join-Path $WebRoot "icon-192.png"),(Join-Path $WebRoot "icon-512.png") $AssetsRoot
+Copy-Item (Join-Path $WebRoot "index.html"),(Join-Path $WebRoot "styles.css"),(Join-Path $WebRoot "tokens.css"),(Join-Path $WebRoot "base.css"),(Join-Path $WebRoot "app.js"),(Join-Path $WebRoot "media.js"),(Join-Path $WebRoot "manifest.webmanifest"),(Join-Path $WebRoot "icon.svg"),(Join-Path $WebRoot "icon-192.png"),(Join-Path $WebRoot "icon-512.png") $AssetsRoot
 
 $CompiledResources = Join-Path $BuildRoot "compiled.zip"
 $GeneratedSources = Join-Path $BuildRoot "generated"
