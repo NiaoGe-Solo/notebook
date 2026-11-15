@@ -816,6 +816,13 @@ svg {
   font-size: var(--text-lg);
 }
 
+.app-version {
+  margin: calc(-1 * var(--space-xs)) 0 var(--space-sm);
+  color: var(--color-muted);
+  font-family: var(--font-outlier);
+  font-size: var(--text-xs);
+}
+
 .sheet-actions {
   display: grid;
   gap: var(--space-xs);
