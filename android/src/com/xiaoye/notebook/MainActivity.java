@@ -19,14 +19,17 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.webkit.MimeTypeMap;
+import android.webkit.ValueCallback;
 
 import java.io.IOException;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private static final int MICROPHONE_REQUEST = 10;
+    private static final int FILE_CHOOSER_REQUEST = 20;
     private static final String MIGRATION_PREFS = "xiaoye_migration";
     private static final String MIGRATION_DONE = "secure_origin_migrated";
+    private ValueCallback<Uri[]> fileChooserCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,6 +61,25 @@ public class MainActivity extends Activity {
                     }
                     request.deny();
                 });
+            }
+
+            @Override
+            public boolean onShowFileChooser(
+                WebView view,
+                ValueCallback<Uri[]> callback,
+                FileChooserParams params
+            ) {
+                if (fileChooserCallback != null) {
+                    fileChooserCallback.onReceiveValue(null);
+                }
+                fileChooserCallback = callback;
+                try {
+                    startActivityForResult(params.createIntent(), FILE_CHOOSER_REQUEST);
+                    return true;
+                } catch (Exception error) {
+                    fileChooserCallback = null;
+                    return false;
+                }
             }
         });
 
@@ -195,6 +217,19 @@ public class MainActivity extends Activity {
                 if (!"true".equals(handled)) finish();
             }
         );
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == FILE_CHOOSER_REQUEST) {
+            if (fileChooserCallback != null) {
+                Uri[] result = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
+                fileChooserCallback.onReceiveValue(result);
+                fileChooserCallback = null;
+            }
+            return;
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
