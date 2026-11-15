@@ -24,6 +24,12 @@
 
 ![编辑页](./previews/mobile-editor.png)
 
+![页间](./previews/theme-editorial.png)
+
+![声页](./previews/theme-recorder.png)
+
+![白页](./previews/theme-native.png)
+
 ## 直接使用网页版
 
 在 `xiaoye-app` 目录启动任意静态文件服务器，例如：
@@ -38,7 +44,7 @@ python -m http.server 4173
 
 ## Android APK
 
-`xiaoye-notepad.apk` 是可直接安装的调试签名 APK，支持 Android 6.0 及以上。
+`xiaoye-notepad.apk` 是可直接安装的调试签名 APK，当前版本 1.1.1，支持 Android 6.0 及以上。
 
 APK 采用本地 WebView，不请求网络权限。录音时 Android 会请求麦克风权限。笔记和媒体附件保存在应用本地，卸载应用或清除应用数据会删除笔记，建议定期使用“备份全部笔记”导出文字内容。
 
@@ -48,6 +54,7 @@ APK 采用本地 WebView，不请求网络权限。录音时 Android 会请求�
 - 浏览器版和 APK 的数据彼此独立。
 - 清除浏览器站点数据或 Android 应用数据会删除笔记。
 - JSON 备份目前包含文字和附件索引，但不打包图片、录音的二进制内容。
+- 从 1.0.0 升级到 1.1.1 时，应用会自动迁移旧版本地笔记。
 
 ## 开源许可
 

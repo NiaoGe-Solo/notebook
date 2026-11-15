@@ -2,6 +2,7 @@ package com.xiaoye.notebook;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.Manifest;
@@ -24,6 +25,8 @@ import java.io.IOException;
 public class MainActivity extends Activity {
     private WebView webView;
     private static final int MICROPHONE_REQUEST = 10;
+    private static final String MIGRATION_PREFS = "xiaoye_migration";
+    private static final String MIGRATION_DONE = "secure_origin_migrated";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +74,13 @@ public class MainActivity extends Activity {
 
         webView.addJavascriptInterface(new NativeBridge(), "AndroidNotepad");
         setContentView(webView);
-        webView.loadUrl("https://appassets.local/index.html");
+
+        SharedPreferences migrationPrefs = getSharedPreferences(MIGRATION_PREFS, MODE_PRIVATE);
+        if (migrationPrefs.getBoolean(MIGRATION_DONE, false)) {
+            loadCurrentApp();
+        } else {
+            webView.loadUrl("file:///android_asset/migrate.html");
+        }
 
         if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(new String[] { Manifest.permission.RECORD_AUDIO }, MICROPHONE_REQUEST);
@@ -93,6 +102,44 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void setTheme(String theme) {
             runOnUiThread(() -> applyNativeTheme(theme));
+        }
+
+        @JavascriptInterface
+        public void captureLegacyData(String notes, String theme) {
+            getSharedPreferences(MIGRATION_PREFS, MODE_PRIVATE)
+                .edit()
+                .putString("legacy_notes", notes == null ? "" : notes)
+                .putString("legacy_theme", theme == null ? "" : theme)
+                .putBoolean(MIGRATION_DONE, true)
+                .apply();
+            runOnUiThread(MainActivity.this::loadCurrentApp);
+        }
+
+        @JavascriptInterface
+        public String getLegacyData() {
+            return getSharedPreferences(MIGRATION_PREFS, MODE_PRIVATE)
+                .getString("legacy_notes", "");
+        }
+
+        @JavascriptInterface
+        public String getLegacyTheme() {
+            return getSharedPreferences(MIGRATION_PREFS, MODE_PRIVATE)
+                .getString("legacy_theme", "");
+        }
+
+        @JavascriptInterface
+        public void clearLegacyData() {
+            getSharedPreferences(MIGRATION_PREFS, MODE_PRIVATE)
+                .edit()
+                .remove("legacy_notes")
+                .remove("legacy_theme")
+                .apply();
+        }
+    }
+
+    private void loadCurrentApp() {
+        if (webView != null) {
+            webView.loadUrl("https://appassets.local/index.html");
         }
     }
 

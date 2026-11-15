@@ -24,6 +24,30 @@ const THEME_COPY = {
   },
 };
 
+const nativeBridge = window.AndroidNotepad;
+
+function importLegacyNativeData() {
+  if (!nativeBridge || typeof nativeBridge.getLegacyData !== "function") return;
+  try {
+    const legacyNotes = nativeBridge.getLegacyData() || "";
+    const legacyTheme = nativeBridge.getLegacyTheme?.() || "";
+    if (legacyNotes && !localStorage.getItem(STORAGE_KEY)) {
+      const parsed = JSON.parse(legacyNotes);
+      if (Array.isArray(parsed)) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+      }
+    }
+    if (legacyTheme && THEMES.has(legacyTheme) && !localStorage.getItem(THEME_KEY)) {
+      localStorage.setItem(THEME_KEY, legacyTheme);
+    }
+    nativeBridge.clearLegacyData?.();
+  } catch (error) {
+    console.error("Legacy data migration failed", error);
+  }
+}
+
+importLegacyNativeData();
+
 const elements = {
   appShell: document.querySelector("#appShell"),
   homeView: document.querySelector("#homeView"),
@@ -98,8 +122,6 @@ let recordingAnimationId = 0;
 let lastDeletedMediaIds = [];
 let attachmentDeleteTimer = 0;
 let deletedNoteCleanupTimer = 0;
-
-const nativeBridge = window.AndroidNotepad;
 
 function makeId() {
   if (crypto.randomUUID) return crypto.randomUUID();

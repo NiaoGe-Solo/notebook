@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>正在迁移笔记</title>
+  <style>
+    html, body { height: 100%; margin: 0; background: #f7f3e8; color: #26221c; font-family: "Microsoft YaHei UI", sans-serif; }
+    body { display: grid; place-items: center; padding: 24px; box-sizing: border-box; }
+    p { max-width: 28rem; margin: 0; text-align: center; line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <p id="status">正在读取旧版笔记…</p>
+  <script>
+    (function () {
+      const status = document.querySelector("#status");
+      try {
+        const notes = localStorage.getItem("xiaoye.notes.v1") || "";
+        const theme = localStorage.getItem("xiaoye.theme.v1") || "";
+        if (window.AndroidNotepad && window.AndroidNotepad.captureLegacyData) {
+          window.AndroidNotepad.captureLegacyData(notes, theme);
+          status.textContent = "旧版数据已读取，正在打开记事本…";
+        } else {
+          status.textContent = "当前环境不支持数据迁移。";
+        }
+      } catch (error) {
+        status.textContent = "旧版数据读取失败，请保留应用数据并联系开发者。";
+      }
+    })();
+  </script>
+</body>
+</html>
