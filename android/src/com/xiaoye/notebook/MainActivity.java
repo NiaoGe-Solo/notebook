@@ -1,14 +1,18 @@
 package com.xiaoye.notebook;
 
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.Manifest;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.OpenableColumns;
+import android.util.Base64;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -22,11 +26,17 @@ import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
 
 import java.io.IOException;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private static final int MICROPHONE_REQUEST = 10;
     private static final int FILE_CHOOSER_REQUEST = 20;
+    private static final int IMAGE_PICK_REQUEST = 21;
     private static final String MIGRATION_PREFS = "xiaoye_migration";
     private static final String MIGRATION_DONE = "secure_origin_migrated";
     private ValueCallback<Uri[]> fileChooserCallback;
@@ -127,6 +137,22 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public void pickImages() {
+            runOnUiThread(() -> {
+                Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
+                intent.setType("image/*");
+                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                try {
+                    startActivityForResult(intent, IMAGE_PICK_REQUEST);
+                } catch (Exception error) {
+                    notifyImagePickerError("系统相册没有启动");
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void captureLegacyData(String notes, String theme) {
             getSharedPreferences(MIGRATION_PREFS, MODE_PRIVATE)
                 .edit()
@@ -221,6 +247,17 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == IMAGE_PICK_REQUEST) {
+            if (resultCode == RESULT_OK && data != null) {
+                new Thread(() -> readSelectedImages(data)).start();
+            } else {
+                runOnUiThread(() -> webView.evaluateJavascript(
+                    "window.XiaoyeNativeImagePickerClosed && window.XiaoyeNativeImagePickerClosed()",
+                    null
+                ));
+            }
+            return;
+        }
         if (requestCode == FILE_CHOOSER_REQUEST) {
             if (fileChooserCallback != null) {
                 Uri[] result = WebChromeClient.FileChooserParams.parseResult(resultCode, data);
@@ -230,6 +267,68 @@ public class MainActivity extends Activity {
             return;
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void readSelectedImages(Intent data) {
+        JSONArray files = new JSONArray();
+        try {
+            if (data.getClipData() != null) {
+                ClipData clipData = data.getClipData();
+                for (int index = 0; index < clipData.getItemCount(); index++) {
+                    addImagePayload(files, clipData.getItemAt(index).getUri());
+                }
+            } else if (data.getData() != null) {
+                addImagePayload(files, data.getData());
+            }
+            String payload = files.toString();
+            runOnUiThread(() -> webView.evaluateJavascript(
+                "window.XiaoyeNativeReceiveImages && window.XiaoyeNativeReceiveImages(" + payload + ")",
+                null
+            ));
+        } catch (Exception error) {
+            notifyImagePickerError("读取所选图片失败");
+        }
+    }
+
+    private void addImagePayload(JSONArray files, Uri uri) throws Exception {
+        String mime = getContentResolver().getType(uri);
+        String name = "图片";
+        Cursor cursor = getContentResolver().query(uri, new String[] { OpenableColumns.DISPLAY_NAME }, null, null, null);
+        if (cursor != null) {
+            try {
+                if (cursor.moveToFirst()) name = cursor.getString(0);
+            } finally {
+                cursor.close();
+            }
+        }
+
+        byte[] bytes;
+        try (InputStream input = getContentResolver().openInputStream(uri)) {
+            if (input == null) throw new IOException("Image input is unavailable");
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int total = 0;
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                total += read;
+                if (total > 12 * 1024 * 1024) throw new IOException("Image exceeds 12 MB");
+                output.write(buffer, 0, read);
+            }
+            bytes = output.toByteArray();
+        }
+
+        JSONObject file = new JSONObject();
+        file.put("name", name);
+        file.put("mime", mime == null ? "image/jpeg" : mime);
+        file.put("data", Base64.encodeToString(bytes, Base64.NO_WRAP));
+        files.put(file);
+    }
+
+    private void notifyImagePickerError(String message) {
+        runOnUiThread(() -> webView.evaluateJavascript(
+            "window.XiaoyeNativeImageError && window.XiaoyeNativeImageError(" + JSONObject.quote(message) + ")",
+            null
+        ));
     }
 
     @Override

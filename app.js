@@ -731,6 +731,42 @@ async function addImages(files) {
   }
 }
 
+function decodeBase64File(payload) {
+  const binary = atob(payload.data || "");
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new File([bytes], payload.name || "图片", {
+    type: payload.mime || "image/jpeg",
+  });
+}
+
+window.XiaoyeNativeReceiveImages = async (payload) => {
+  if (!Array.isArray(payload) || !payload.length) {
+    elements.saveStatus.textContent = "已保存";
+    showToast("没有读取到图片");
+    return;
+  }
+  try {
+    const files = payload.map(decodeBase64File);
+    await addImages(files);
+  } catch (error) {
+    console.error(error);
+    elements.saveStatus.textContent = "已保存";
+    showToast("图片读取失败，请换一张图片重试");
+  }
+};
+
+window.XiaoyeNativeImageError = (message) => {
+  elements.saveStatus.textContent = "已保存";
+  showToast(message || "图片读取失败");
+};
+
+window.XiaoyeNativeImagePickerClosed = () => {
+  elements.saveStatus.textContent = "已保存";
+};
+
 async function removeAttachment(mediaId) {
   const note = getActiveNote();
   if (!note) return;
@@ -1231,8 +1267,18 @@ elements.noteMenuButton.addEventListener("click", () => openSheet("note"));
 elements.homeMenuButton.addEventListener("click", () => openSheet("home"));
 elements.themeButton.addEventListener("click", () => openSheet("home"));
 elements.pinButton.addEventListener("click", togglePin);
-elements.imageButton.addEventListener("click", () => elements.imageInput.click());
+elements.imageButton.addEventListener("click", () => {
+  if (nativeBridge && typeof nativeBridge.pickImages === "function") {
+    elements.saveStatus.textContent = "正在打开相册…";
+    nativeBridge.pickImages();
+    return;
+  }
+  elements.imageInput.click();
+});
 elements.imageInput.addEventListener("change", (event) => addImages(event.target.files));
+elements.imageInput.addEventListener("cancel", () => {
+  elements.saveStatus.textContent = "已保存";
+});
 elements.recordButton.addEventListener("click", openRecordPanel);
 elements.recordToggleButton.addEventListener("click", toggleRecording);
 elements.shareNoteButton.addEventListener("click", shareNote);
